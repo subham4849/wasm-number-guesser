@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>C++ Number Guessing Game</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        h1 { color: #1e3a8a; }
+        p { margin: 1rem 0; }
+        button { background-color: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 5px; transition: background-color 0.2s; }
+        button:hover { background-color: #1d4ed8; }
+        input { font-size: 18px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; text-align: center; width: 80%; }
+        #gameArea { display: none; }
+        #result { font-weight: bold; font-size: 1.1rem; min-height: 25px;}
+        .win { color: #16a34a; }
+        .lose { color: #dc2626; }
+        .info { color: #525252; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Number Guessing Game</h1>
+        
+        <div id="difficultySelection">
+            <p>Choose your difficulty:</p>
+            <button onclick="selectDifficulty(1)">Easy (1-50)</button>
+            <button onclick="selectDifficulty(2)">Medium (1-100)</button>
+            <button onclick="selectDifficulty(3)">Hard (1-200)</button>
+        </div>
+
+        <div id="gameArea">
+            <p id="attemptsText"></p>
+            <input type="number" id="guessInput" placeholder="Enter your guess">
+            <br><br>
+            <button onclick="submitGuess()">Submit Guess</button>
+            <p id="result"></p>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+
+    <script>
+        // We have to wait for the Wasm module to be ready
+        Module.onRuntimeInitialized = () => {
+            // These are our JavaScript functions that will call the C++ code
+            const startGame = Module.cwrap('startGame', null, ['number']);
+            const makeGuess = Module.cwrap('makeGuess', 'string', ['number']);
+            const getAttempts = Module.cwrap('getAttempts', 'number', []);
+            const getMaxAttempts = Module.cwrap('getMaxAttempts', 'number', []);
+
+            // Get references to HTML elements
+            const difficultyDiv = document.getElementById('difficultySelection');
+            const gameDiv = document.getElementById('gameArea');
+            const guessInput = document.getElementById('guessInput');
+            const resultText = document.getElementById('result');
+            const attemptsText = document.getElementById('attemptsText');
+
+            // Make functions available globally so buttons can call them
+            window.selectDifficulty = (level) => {
+                startGame(level);
+                difficultyDiv.style.display = 'none';
+                gameDiv.style.display = 'block';
+                guessInput.disabled = false;
+                guessInput.value = '';
+                resultText.textContent = '';
+                resultText.className = '';
+                updateAttempts();
+            };
+
+            window.submitGuess = () => {
+                const guess = parseInt(guessInput.value);
+                if (isNaN(guess)) return;
+
+                const result = makeGuess(guess);
+                resultText.textContent = result;
+                updateAttempts();
+
+                // Check for win/loss to change color and disable input
+                if (result.includes("CONGRATULATIONS")) {
+                    resultText.className = 'win';
+                    guessInput.disabled = true;
+                } else if (result.includes("lost")) {
+                    resultText.className = 'lose';
+                    guessInput.disabled = true;
+                } else {
+                    resultText.className = 'info';
+                }
+            };
+            
+            function updateAttempts() {
+                const current = getAttempts();
+                const max = getMaxAttempts();
+                attemptsText.textContent = `Attempt: ${current} / ${max}`;
+            }
+        };
+    </script>
+</body>
+</html>
