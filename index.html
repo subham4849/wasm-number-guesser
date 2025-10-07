@@ -21,7 +21,7 @@
             overflow: hidden; /* Hide scrollbars from canvas */
         }
 
-        /* NEW: Styles for the 3D background canvas */
+        /* Styles for the 3D background canvas */
         #bg-canvas {
             position: fixed;
             top: 0;
@@ -210,7 +210,6 @@
 </head>
 <body>
     
-    <!-- NEW: Canvas for the 3D background -->
     <canvas id="bg-canvas"></canvas>
 
     <div class="main-wrapper">
@@ -242,7 +241,6 @@
 
     <script src="game.js"></script>
     <script>
-        // This is your existing game logic. It remains unchanged.
         Module.onRuntimeInitialized = () => {
             const startGame = Module.cwrap('startGame', null, ['number']);
             const makeGuess = Module.cwrap('makeGuess', 'string', ['number']);
@@ -253,6 +251,19 @@
             const guessInput = document.getElementById('guessInput');
             const resultText = document.getElementById('result');
             const attemptsText = document.getElementById('attemptsText');
+            
+            // --- NEW: Add event listener for the Enter key ---
+            guessInput.addEventListener('keydown', (event) => {
+                // Check if the key pressed was 'Enter'
+                if (event.key === 'Enter') {
+                    // Prevent any default browser action
+                    event.preventDefault();
+                    // Call the same function as the button click
+                    window.submitGuess();
+                }
+            });
+            // --- End of new code ---
+
             window.selectDifficulty = (level) => {
                 startGame(level);
                 difficultyDiv.style.display = 'none';
@@ -262,6 +273,7 @@
                 resultText.textContent = '';
                 resultText.className = '';
                 updateAttempts();
+                guessInput.focus(); // Automatically focus the input field
             };
             window.submitGuess = () => {
                 const guess = parseInt(guessInput.value);
@@ -269,6 +281,10 @@
                 const result = makeGuess(guess);
                 resultText.textContent = result;
                 updateAttempts();
+
+                // Clear input after guess
+                guessInput.value = '';
+
                 if (result.includes("CONGRATULATIONS")) {
                     resultText.className = 'win';
                     guessInput.disabled = true;
@@ -287,72 +303,52 @@
         };
     </script>
     
-    <!-- NEW: Include the three.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <!-- NEW: Script for the 3D background effect -->
     <script>
-        // Scene setup
+        // 3D background script (unchanged)
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const canvas = document.getElementById('bg-canvas');
         const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
 
-        // Create particles (stars)
         const particlesGeometry = new THREE.BufferGeometry();
         const particlesCount = 8000;
-
         const posArray = new Float32Array(particlesCount * 3);
-
         for (let i = 0; i < particlesCount * 3; i++) {
             posArray[i] = (Math.random() - 0.5) * 10;
         }
-
         particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
         const particlesMaterial = new THREE.PointsMaterial({
             size: 0.008,
             color: 0x00e5ff,
             transparent: true,
             blending: THREE.AdditiveBlending
         });
-
         const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
         scene.add(particlesMesh);
-
         camera.position.z = 2;
 
-        // Mouse movement interaction
-        document.addEventListener('mousemove', onMouseMove, false);
         let mouseX = 0;
         let mouseY = 0;
-
-        function onMouseMove(event) {
+        document.addEventListener('mousemove', (event) => {
             mouseX = event.clientX - (window.innerWidth / 2);
             mouseY = event.clientY - (window.innerHeight / 2);
-        }
+        });
 
-        // Animation loop
         const clock = new THREE.Clock();
         const animate = () => {
             requestAnimationFrame(animate);
             const elapsedTime = clock.getElapsedTime();
-
-            // Animate particles
             particlesMesh.rotation.y = elapsedTime * 0.05;
-
-            // Make the scene react to mouse movement for a parallax effect
             camera.position.x += (mouseX * 0.00005 - camera.position.x) * 0.05;
             camera.position.y += (-mouseY * 0.00005 - camera.position.y) * 0.05;
             camera.lookAt(scene.position);
-
             renderer.render(scene, camera);
         };
-
         animate();
 
-        // Handle window resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
