@@ -343,7 +343,7 @@
                 <input type="number" id="guessInput" placeholder="Enter your guess">
                 <br><br>
                 <button onclick="submitGuess()">Submit Guess</button>
-                <button onclick="exitGame()">Exit Game</button>
+               
                  <button onclick="goBack()">Back</button>
                 <p id="result"></p>
             </div>
@@ -412,13 +412,7 @@
                     resultText.className = 'info';
                 }
             };
-            // --- ADD THIS NEW FUNCTION ---
-            window.exitGame = () => {
-                if (confirm("Are you sure you want to exit the game?")) {
-                    window.close();
-                }
-            };
-            // --- END OF NEW FUNCTION ---
+           
              // --- ADD THIS NEW FUNCTION ---
         window.goBack = () => {
             document.getElementById('gameArea').style.display = 'none';
